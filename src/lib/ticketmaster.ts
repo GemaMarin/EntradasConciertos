@@ -1,5 +1,5 @@
 import type { Artist, ConcertEvent, Sale } from "./types";
-import { hashHue } from "./colors";
+import { matchCity } from "./cities";
 
 /**
  * Integración con Ticketmaster Discovery API v2.
@@ -11,12 +11,7 @@ const BASE = "https://app.ticketmaster.com/discovery/v2";
 export const ticketmasterEnabled = () => Boolean(process.env.TICKETMASTER_API_KEY);
 
 type TmImage = { url: string; ratio?: string; width: number };
-type TmAttraction = {
-  id: string;
-  name: string;
-  images?: TmImage[];
-  classifications?: { genre?: { name: string }; subGenre?: { name: string } }[];
-};
+type TmAttraction = { id: string; name: string };
 type TmEvent = {
   id: string;
   name: string;
@@ -44,69 +39,79 @@ async function tm<T>(path: string, params: Record<string, string>): Promise<T> {
 const bestImage = (imgs?: TmImage[]) =>
   imgs?.filter((i) => i.ratio === "16_9").sort((a, b) => b.width - a.width)[0]?.url ?? imgs?.[0]?.url;
 
-export async function tmSearchArtists(q: string): Promise<Artist[]> {
-  const data = await tm<{ _embedded?: { attractions: TmAttraction[] } }>("/attractions.json", {
-    keyword: q,
-    classificationName: "music",
-    size: "20",
-  });
-  return (data._embedded?.attractions ?? []).map((a) => ({
-    id: a.id,
-    name: a.name,
-    genres: [a.classifications?.[0]?.genre?.name].filter((g): g is string => !!g && g !== "Undefined"),
-    hue: hashHue(a.name),
-    imageUrl: bestImage(a.images),
-    source: "ticketmaster" as const,
-  }));
+const norm = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Ejecuta tareas con concurrencia limitada (Ticketmaster permite ~5 peticiones/s) */
+async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  let i = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(n, items.length) }, async () => {
+      while (i < items.length) {
+        const idx = i++;
+        out[idx] = await fn(items[idx]);
+      }
+    }),
+  );
+  return out;
 }
 
-export async function tmEventsFor(artists: Artist[]): Promise<ConcertEvent[]> {
-  const ids = artists.filter((a) => a.source === "ticketmaster").map((a) => a.id);
-  if (!ids.length) return [];
-  const data = await tm<{ _embedded?: { events: TmEvent[] } }>("/events.json", {
-    attractionId: ids.join(","),
-    countryCode: "ES",
-    city: "Madrid",
-    size: "100",
-    sort: "date,asc",
-  });
-  return (data._embedded?.events ?? []).map((e) => {
-    const attraction = e._embedded?.attractions?.find((a) => ids.includes(a.id)) ?? e._embedded?.attractions?.[0];
-    const venue = e._embedded?.venues?.[0];
-    const sales: Sale[] = [
-      ...(e.sales?.presales ?? []).map((p, i) => ({
-        id: `${e.id}-pre-${i}`,
-        kind: "presale" as const,
-        name: p.name,
-        start: p.startDateTime,
-        end: p.endDateTime,
-      })),
-    ];
-    if (e.sales?.public?.startDateTime && !e.sales.public.startTBD) {
-      sales.push({
-        id: `${e.id}-gen`,
-        kind: "general",
-        name: "Venta general",
-        start: e.sales.public.startDateTime,
-        end: e.sales.public.endDateTime,
+/** Busca por nombre de artista y se queda con los conciertos en las ciudades elegidas */
+export async function tmEventsFor(artists: Artist[], cityIds: string[]): Promise<ConcertEvent[]> {
+  const lists = await pool(artists, 4, async (artist) => {
+    try {
+      const data = await tm<{ _embedded?: { events: TmEvent[] } }>("/events.json", {
+        keyword: artist.name,
+        classificationName: "music",
+        size: "100",
+        sort: "date,asc",
       });
+      return (data._embedded?.events ?? [])
+        .filter((e) => e._embedded?.attractions?.some((a) => norm(a.name) === norm(artist.name)))
+        .map((e) => ({ e, city: matchCity(e._embedded?.venues?.[0]?.city?.name ?? "", cityIds) }))
+        .filter((x) => x.city)
+        .map(({ e, city }) => mapEvent(e, artist, city!.name));
+    } catch (err) {
+      console.error(err);
+      return [];
     }
-    const name = attraction?.name ?? e.name;
-    return {
-      id: e.id,
-      artistId: attraction?.id ?? "",
-      artistName: name,
-      tour: e.name !== name ? e.name : undefined,
-      date: e.dates.start.dateTime ?? `${e.dates.start.localDate}T20:00:00+01:00`,
-      venue: venue?.name ?? "Por confirmar",
-      city: venue?.city?.name ?? "Madrid",
-      vendor: "Ticketmaster",
-      ticketUrl: e.url,
-      priceFrom: e.priceRanges?.[0]?.min,
-      imageUrl: bestImage(e.images),
-      hue: hashHue(name),
-      sales: sales.sort((a, b) => a.start.localeCompare(b.start)),
-      source: "ticketmaster" as const,
-    };
   });
+  return lists.flat();
+}
+
+function mapEvent(e: TmEvent, artist: Artist, cityName: string): ConcertEvent {
+  const venue = e._embedded?.venues?.[0];
+  const sales: Sale[] = (e.sales?.presales ?? []).map((p, i) => ({
+    id: `${e.id}-pre-${i}`,
+    kind: "presale" as const,
+    name: p.name,
+    start: p.startDateTime,
+    end: p.endDateTime,
+  }));
+  if (e.sales?.public?.startDateTime && !e.sales.public.startTBD) {
+    sales.push({
+      id: `${e.id}-gen`,
+      kind: "general",
+      name: "Venta general",
+      start: e.sales.public.startDateTime,
+      end: e.sales.public.endDateTime,
+    });
+  }
+  return {
+    id: e.id,
+    artistId: artist.id,
+    artistName: artist.name,
+    tour: norm(e.name) !== norm(artist.name) ? e.name : undefined,
+    date: e.dates.start.dateTime ?? `${e.dates.start.localDate}T20:00:00+01:00`,
+    venue: venue?.name ?? "Por confirmar",
+    city: cityName,
+    vendor: "Ticketmaster",
+    ticketUrl: e.url,
+    priceFrom: e.priceRanges?.[0]?.min,
+    imageUrl: bestImage(e.images) ?? artist.imageUrl,
+    hue: artist.hue,
+    sales: sales.sort((a, b) => a.start.localeCompare(b.start)),
+    source: "ticketmaster",
+  };
 }

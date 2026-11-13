@@ -1,5 +1,6 @@
 import type { Artist, ConcertEvent, Sale } from "./types";
-import { CATALOG } from "./catalog";
+import { CATALOG, slug } from "./catalog";
+import { cityById } from "./cities";
 
 /** PRNG determinista para que los datos de ejemplo no cambien en cada recarga */
 function mulberry32(seed: number) {
@@ -13,11 +14,46 @@ function mulberry32(seed: number) {
 }
 const seedOf = (s: string) => [...s].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
 
-const VENUES: Record<1 | 2 | 3, string[]> = {
-  1: ["Estadio Santiago Bernabéu", "Riyadh Air Metropolitano", "Movistar Arena"],
-  2: ["Movistar Arena", "Palacio Vistalegre", "IFEMA Madrid Live", "Caja Mágica"],
-  3: ["La Riviera", "Sala But", "Teatro Eslava", "Sala Sol", "Joy Eslava", "Teatro Barceló"],
+type Tier = 1 | 2 | 3;
+const VENUES: Record<string, Record<Tier, string[]>> = {
+  madrid: {
+    1: ["Estadio Santiago Bernabéu", "Riyadh Air Metropolitano", "Movistar Arena"],
+    2: ["Movistar Arena", "Palacio Vistalegre", "IFEMA Madrid Live", "Caja Mágica"],
+    3: ["La Riviera", "Sala But", "Teatro Eslava", "Sala Sol", "Joy Eslava", "Teatro Barceló"],
+  },
+  barcelona: {
+    1: ["Estadi Olímpic Lluís Companys", "Palau Sant Jordi"],
+    2: ["Palau Sant Jordi", "Sant Jordi Club", "Poble Espanyol"],
+    3: ["Razzmatazz", "Sala Apolo", "Paral·lel 62", "La Paloma"],
+  },
+  valencia: {
+    1: ["Roig Arena", "Estadio Ciutat de València"],
+    2: ["Roig Arena", "Auditorio Marina Sur"],
+    3: ["Sala Moon", "La Rambleta", "Loco Club"],
+  },
+  sevilla: {
+    1: ["Estadio La Cartuja"],
+    2: ["Auditorio Rocío Jurado", "FIBES"],
+    3: ["Sala Custom", "Sala X", "Cartuja Center"],
+  },
+  bilbao: {
+    1: ["San Mamés", "Bizkaia Arena (BEC)"],
+    2: ["Bizkaia Arena (BEC)", "Bilbao Arena"],
+    3: ["Kafe Antzokia", "Santana 27"],
+  },
+  malaga: {
+    1: ["Estadio La Rosaleda", "Palacio Martín Carpena"],
+    2: ["Palacio Martín Carpena"],
+    3: ["Sala París 15", "La Trinchera"],
+  },
 };
+const venuesFor = (cityId: string, tier: Tier) => {
+  const v = VENUES[cityId]?.[tier];
+  if (v) return v;
+  const name = cityById(cityId)?.name ?? cityId;
+  return tier === 3 ? [`Sala Centro ${name}`, `Teatro Principal ${name}`] : [`Palacio de Deportes de ${name}`, `Recinto Ferial de ${name}`];
+};
+
 const VENDORS = [
   { name: "Ticketmaster", url: (q: string) => `https://www.ticketmaster.es/search?q=${encodeURIComponent(q)}` },
   { name: "Live Nation", url: (q: string) => `https://www.ticketmaster.es/search?q=${encodeURIComponent(q)}` },
@@ -33,25 +69,34 @@ function at(base: number, days: number, hourUtc: number) {
   return new Date(base + days * DAY + hourUtc * 3_600_000).toISOString();
 }
 
-export function demoEventsFor(artists: Artist[], now = new Date()): ConcertEvent[] {
+function tierOf(artist: Artist): Tier {
+  const meta = CATALOG.find((c) => c.id === artist.id || slug(c.name) === slug(artist.name));
+  if (meta) return meta.tier;
+  if (artist.fans && artist.fans > 2_000_000) return 1;
+  if (artist.fans && artist.fans > 150_000) return 2;
+  return 3;
+}
+
+export function demoEventsFor(artists: Artist[], cityIds: string[], now = new Date()): ConcertEvent[] {
+  if (!cityIds.length) return [];
   const base = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   // Semana del año: los datos se "mueven" poco a poco pero son estables durante días
   const epoch = Math.floor(base / (14 * DAY));
   const events: ConcertEvent[] = [];
 
   for (const artist of artists) {
-    const meta = CATALOG.find((c) => c.id === artist.id);
-    const tier = meta?.tier ?? 3;
-    const rnd = mulberry32(seedOf(artist.id) ^ epoch);
+    const tier = tierOf(artist);
+    const rnd = mulberry32(seedOf(slug(artist.name) + cityIds.join()) ^ epoch);
     const roll = rnd();
     const count = roll < 0.18 ? 0 : roll < 0.78 ? 1 : 2;
 
     for (let i = 0; i < count; i++) {
       const showDay = Math.floor(25 + rnd() * 340);
       const vendor = VENDORS[Math.floor(rnd() * VENDORS.length)];
-      const venues = VENUES[tier];
+      const cityId = cityIds[Math.floor(rnd() * cityIds.length)];
+      const venues = venuesFor(cityId, tier);
       const venue = venues[Math.floor(rnd() * venues.length)];
-      const id = `${artist.id}-${epoch}-${i}`;
+      const id = `${artist.id}-${cityId}-${epoch}-${i}`;
       const sales: Sale[] = [];
 
       // Escenarios: ya a la venta / sale pronto (incluye hoy) / sale más adelante
@@ -87,7 +132,7 @@ export function demoEventsFor(artists: Artist[], now = new Date()): ConcertEvent
         tour: `${artist.name.split(" ")[0]} ${TOURS[Math.floor(rnd() * TOURS.length)]}`,
         date: at(base, showDay, tier === 3 ? 20 : 19),
         venue,
-        city: "Madrid",
+        city: cityById(cityId)?.name ?? cityId,
         vendor: vendor.name,
         ticketUrl: vendor.url(artist.name),
         priceFrom: tier === 1 ? 65 + Math.floor(rnd() * 40) : tier === 2 ? 35 + Math.floor(rnd() * 30) : 18 + Math.floor(rnd() * 15),

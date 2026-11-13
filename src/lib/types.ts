@@ -5,8 +5,12 @@ export type Artist = {
   /** Tono base (0-360) para generar el degradado del artista */
   hue: number;
   imageUrl?: string;
-  source: "demo" | "ticketmaster";
+  /** Seguidores en Deezer (para ordenar resultados) */
+  fans?: number;
+  source: ArtistSource;
 };
+
+export type ArtistSource = "demo" | "deezer" | "ticketmaster" | "custom";
 
 export type SaleKind = "presale" | "general";
 

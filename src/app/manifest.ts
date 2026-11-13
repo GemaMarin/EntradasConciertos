@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Primera Fila · Conciertos en Madrid",
+    name: "Primera Fila",
     short_name: "Primera Fila",
-    description: "Los conciertos de tus artistas en Madrid y el día exacto en que salen las entradas.",
+    description: "Los conciertos de tus artistas en tu ciudad y el día exacto en que salen las entradas.",
     start_url: "/",
     display: "standalone",
     background_color: "#08080c",

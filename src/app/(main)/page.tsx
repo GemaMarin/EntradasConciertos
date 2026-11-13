@@ -11,11 +11,14 @@ import { PageTitle, Section, EmptyState } from "@/components/Section";
 import { SaleCard } from "@/components/SaleCard";
 import { EventRow } from "@/components/EventRow";
 import { DemoBadge } from "@/components/DemoBadge";
+import { citiesLabel } from "@/components/CityPicker";
+import { MapPin } from "lucide-react";
 
 export default function Home() {
   const now = useNow(1000);
   const name = useApp((s) => s.name);
   const artists = useApp((s) => s.artists);
+  const cities = useApp((s) => s.cities);
   const status = useApp((s) => s.status);
   const setReminders = useApp((s) => s.setReminders);
   const openSheet = useSheet((s) => s.open);
@@ -30,6 +33,12 @@ export default function Home() {
   return (
     <main>
       <PageTitle eyebrow={formatLong(now).split(" de 20")[0]} title={name ? `Hola, ${name}` : "Primera Fila"} right={<DemoBadge />} />
+      <Link
+        href="/artistas#ciudades"
+        className="mx-5 mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[13px] font-semibold text-muted ring-1 ring-line"
+      >
+        <MapPin size={13} className="text-accent" /> {citiesLabel(cities)}
+      </Link>
 
       {loading && events.length === 0 ? (
         <Skeleton />
@@ -38,7 +47,7 @@ export default function Home() {
           <EmptyState
             icon={<Mic2 size={22} />}
             title="Aún no sigues a nadie"
-            text="Añade tus grupos favoritos y te avisaremos de sus conciertos en Madrid."
+            text="Añade tus grupos favoritos y te avisaremos de sus conciertos en tu ciudad."
             action={<PrimaryLink href="/artistas">Añadir artistas</PrimaryLink>}
           />
         </div>
@@ -132,7 +141,7 @@ export default function Home() {
             {events.length === 0 ? (
               <EmptyState
                 icon={<Ticket size={22} />}
-                title="Sin conciertos en Madrid"
+                title="Sin conciertos en tus ciudades"
                 text="De momento tus artistas no tienen fechas anunciadas aquí. Prueba a seguir a más."
                 action={<PrimaryLink href="/artistas">Seguir más artistas</PrimaryLink>}
               />

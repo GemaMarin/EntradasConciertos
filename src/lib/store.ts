@@ -8,6 +8,8 @@ type State = {
   onboarded: boolean;
   name: string;
   artists: Artist[];
+  /** ids de ciudades (ver lib/cities.ts) */
+  cities: string[];
   status: Record<string, EventStatus>;
   /** ids de salidas a la venta con recordatorio */
   reminders: Record<string, true>;
@@ -16,6 +18,7 @@ type State = {
   completeOnboarding: () => void;
   toggleArtist: (a: Artist) => void;
   removeArtist: (id: string) => void;
+  toggleCity: (id: string) => void;
   setStatus: (eventId: string, s: EventStatus | null) => void;
   toggleReminder: (saleId: string) => void;
   setReminders: (ids: string[]) => void;
@@ -28,6 +31,7 @@ export const useApp = create<State>()(
       onboarded: false,
       name: "",
       artists: [],
+      cities: ["madrid"],
       status: {},
       reminders: {},
       setName: (name) => set({ name }),
@@ -39,6 +43,12 @@ export const useApp = create<State>()(
             : [...s.artists, a],
         })),
       removeArtist: (id) => set((s) => ({ artists: s.artists.filter((x) => x.id !== id) })),
+      toggleCity: (id) =>
+        set((s) => {
+          if (!s.cities.includes(id)) return { cities: [...s.cities, id] };
+          // siempre al menos una ciudad
+          return s.cities.length > 1 ? { cities: s.cities.filter((c) => c !== id) } : {};
+        }),
       setStatus: (eventId, st) =>
         set((s) => {
           const status = { ...s.status };
@@ -55,9 +65,9 @@ export const useApp = create<State>()(
         }),
       setReminders: (ids) =>
         set((s) => ({ reminders: { ...s.reminders, ...Object.fromEntries(ids.map((i) => [i, true as const])) } })),
-      reset: () => set({ onboarded: false, artists: [], status: {}, reminders: {}, name: "" }),
+      reset: () => set({ onboarded: false, artists: [], cities: ["madrid"], status: {}, reminders: {}, name: "" }),
     }),
-    { name: "entradas-conciertos", version: 1 },
+    { name: "entradas-conciertos", version: 2 },
   ),
 );
 

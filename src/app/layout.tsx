@@ -6,8 +6,8 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], weight: ["500", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "Primera Fila · Conciertos en Madrid",
-  description: "Los conciertos de tus artistas en Madrid y el día exacto en que salen las entradas.",
+  title: "Primera Fila · Que no se te escape ni una entrada",
+  description: "Los conciertos de tus artistas en tu ciudad y el día exacto en que salen las entradas.",
   applicationName: "Primera Fila",
   icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Primera Fila", statusBarStyle: "black-translucent" },

@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, BellRing, CalendarDays, Music, Ticket } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { ArtistPicker } from "@/components/ArtistPicker";
+import { CityPicker } from "@/components/CityPicker";
 import { artistGradient } from "@/lib/colors";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -37,7 +38,7 @@ export default function Welcome() {
                 Que no se te <span className="text-gradient">escape</span> ni una entrada.
               </h1>
               <ul className="mt-7 space-y-3.5 text-[15px] text-muted">
-                <Feature icon={<CalendarDays size={18} />}>Los conciertos de tus grupos en Madrid</Feature>
+                <Feature icon={<CalendarDays size={18} />}>Los conciertos de tus grupos en tu ciudad</Feature>
                 <Feature icon={<Ticket size={18} />}>El día y la hora exacta en que salen las entradas</Feature>
                 <Feature icon={<BellRing size={18} />}>Avisos en tu calendario para llegar a tiempo</Feature>
               </ul>
@@ -92,15 +93,40 @@ export default function Welcome() {
             key="s2"
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.3, ease }}
+            className="flex min-h-dvh flex-col px-6 pt-[calc(var(--safe-top)+3rem)] pb-[calc(var(--safe-bottom)+1.5rem)]"
+          >
+            <Steps current={1} />
+            <h1 className="mt-8 font-[family-name:var(--font-display)] text-[2.3rem] leading-none font-extrabold tracking-tight">
+              ¿Dónde quieres ir a conciertos?
+            </h1>
+            <p className="mt-2 mb-7 text-muted">Elige una o varias ciudades. Puedes cambiarlas cuando quieras.</p>
+            <CityPicker />
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setStep(3)}
+              className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-ink py-4 text-[16px] font-semibold text-black max-sm:mt-10"
+            >
+              Continuar <ArrowRight size={18} />
+            </motion.button>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div
+            key="s3"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, ease }}
             className="pt-[calc(var(--safe-top)+3rem)] pb-40"
           >
             <div className="px-6">
-              <Steps current={1} />
+              <Steps current={2} />
               <h1 className="mt-8 font-[family-name:var(--font-display)] text-[2.3rem] leading-none font-extrabold tracking-tight">
                 ¿A quién quieres seguir?
               </h1>
-              <p className="mt-2 text-muted">Elige tus grupos y artistas favoritos. Podrás cambiarlos cuando quieras.</p>
+              <p className="mt-2 text-muted">Busca a tus grupos y artistas favoritos. Podrás cambiarlos cuando quieras.</p>
               <button
                 disabled
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1ed760]/10 py-3.5 text-[15px] font-semibold text-[#1ed760] ring-1 ring-[#1ed760]/25"
@@ -144,7 +170,7 @@ function Feature({ icon, children }: { icon: React.ReactNode; children: React.Re
 function Steps({ current }: { current: number }) {
   return (
     <div className="flex gap-1.5">
-      {[0, 1].map((i) => (
+      {[0, 1, 2].map((i) => (
         <div key={i} className="h-1 flex-1 overflow-hidden rounded-full bg-surface-3">
           <motion.div
             className="h-full bg-ink"

@@ -10,6 +10,7 @@ import { PageTitle, Section } from "@/components/Section";
 import { ArtistAvatar } from "@/components/ArtistAvatar";
 import { ArtistPicker } from "@/components/ArtistPicker";
 import { Pill } from "@/components/EventRow";
+import { CityPicker } from "@/components/CityPicker";
 
 export default function ArtistsPage() {
   const now = useNow(60_000);
@@ -76,7 +77,7 @@ export default function ArtistsPage() {
                     <p className="truncate font-semibold tracking-tight">{a.name}</p>
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       {evs.length === 0 ? (
-                        <Pill tone="neutral">Sin fechas en Madrid</Pill>
+                        <Pill tone="neutral">Sin fechas en tus ciudades</Pill>
                       ) : (
                         <Pill tone="accent">
                           {evs.length} {evs.length === 1 ? "concierto" : "conciertos"}
@@ -98,6 +99,14 @@ export default function ArtistsPage() {
           </AnimatePresence>
         </div>
       </Section>
+
+      <div id="ciudades" className="scroll-mt-6">
+        <Section title="Tus ciudades">
+          <div className="px-5">
+            <CityPicker />
+          </div>
+        </Section>
+      </div>
 
       <Section title="Conectar">
         <div className="mx-5 flex items-center gap-3.5 rounded-3xl bg-surface p-4 ring-1 ring-line">

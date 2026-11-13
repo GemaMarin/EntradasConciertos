@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Search, X } from "lucide-react";
+import { Check, Plus, Search, X } from "lucide-react";
+import { slug } from "@/lib/catalog";
+import { hashHue } from "@/lib/colors";
 import type { Artist } from "@/lib/types";
 import { useApp } from "@/lib/store";
 import { ArtistAvatar } from "./ArtistAvatar";
@@ -31,8 +33,16 @@ export function ArtistPicker({ hideSelected = false }: { hideSelected?: boolean 
     };
   }, [q]);
 
+  // Un artista puede venir del catálogo y de Deezer: comparamos también por nombre
   const ids = new Set(selected.map((a) => a.id));
-  const list = hideSelected ? results.filter((a) => !ids.has(a.id)) : results;
+  const names = new Set(selected.map((a) => slug(a.name)));
+  const isOn = (a: Artist) => ids.has(a.id) || names.has(slug(a.name));
+  const list = hideSelected ? results.filter((a) => !isOn(a)) : results;
+  const exact = results.some((a) => slug(a.name) === slug(q));
+  const custom: Artist | null =
+    q.trim().length >= 2 && !exact && !loading
+      ? { id: `custom-${slug(q)}`, name: q.trim(), genres: [], hue: hashHue(q.trim()), source: "custom" }
+      : null;
 
   return (
     <div>
@@ -54,7 +64,7 @@ export function ArtistPicker({ hideSelected = false }: { hideSelected?: boolean 
       <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-5 px-5 sm:grid-cols-4">
         <AnimatePresence initial={false}>
           {list.map((a) => {
-            const on = ids.has(a.id);
+            const on = isOn(a);
             return (
               <motion.button
                 key={a.id}
@@ -63,7 +73,7 @@ export function ArtistPicker({ hideSelected = false }: { hideSelected?: boolean 
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 whileTap={{ scale: 0.92 }}
-                onClick={() => toggle(a)}
+                onClick={() => toggle(on ? selected.find((x) => x.id === a.id || slug(x.name) === slug(a.name))! : a)}
                 className="flex flex-col items-center gap-2"
               >
                 <div className="relative">
@@ -93,10 +103,29 @@ export function ArtistPicker({ hideSelected = false }: { hideSelected?: boolean 
           })}
         </AnimatePresence>
       </div>
-      {!loading && list.length === 0 && (
-        <p className="px-5 py-10 text-center text-sm text-muted">
-          No encontramos «{q}». En la versión con datos reales podrás buscar cualquier artista.
-        </p>
+      {loading && results.length === 0 && (
+        <div className="mt-5 grid animate-pulse grid-cols-3 gap-x-3 gap-y-5 px-5 sm:grid-cols-4">
+          {Array.from({ length: 9 }, (_, i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <div className="h-[84px] w-[84px] rounded-full bg-surface-2" />
+              <div className="h-3 w-16 rounded bg-surface-2" />
+            </div>
+          ))}
+        </div>
+      )}
+      {custom && !isOn(custom) && (
+        <div className="mx-5 mt-6 flex items-center gap-3 rounded-3xl border border-dashed border-line p-3.5">
+          <p className="min-w-0 flex-1 text-[13px] text-muted">
+            ¿No aparece? Síguelo igualmente y te avisaremos si anuncia conciertos.
+          </p>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => toggle(custom)}
+            className="flex max-w-[55%] shrink-0 items-center gap-1.5 rounded-full bg-ink px-3.5 py-2 text-[13px] font-semibold text-black"
+          >
+            <Plus size={15} /> <span className="truncate">Seguir a «{custom.name}»</span>
+          </motion.button>
+        </div>
       )}
     </div>
   );

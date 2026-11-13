@@ -1,10 +1,10 @@
 # Primera Fila 🎟️
 
-App (web instalable / PWA) para seguir a tus grupos favoritos y **no perderte nunca el día en que salen las entradas** de sus conciertos en Madrid.
+App (web instalable / PWA) para seguir a tus grupos favoritos y **no perderte nunca el día en que salen las entradas** de sus conciertos en tu ciudad (o varias).
 
 ## Qué hace ya (fase 1)
 
-- **Bienvenida** con selección manual de artistas (Spotify: próximamente).
+- **Bienvenida**: nombre, ciudades y búsqueda de artistas en el catálogo completo de Deezer (cualquier artista; si no aparece, se puede seguir por nombre). Spotify: próximamente.
 - **Inicio**: aviso destacado si hoy salen entradas, carrusel *Salen a la venta* con cuenta atrás, conciertos ya a la venta y tus conciertos.
 - **Calendario** mensual con conciertos (rosa) y salidas a la venta (amarillo), filtro y agenda.
 - **Artistas**: seguir / dejar de seguir, con su próxima venta.
@@ -27,7 +27,7 @@ npm run dev   # http://localhost:3000
    ```
    TICKETMASTER_API_KEY=tu_clave
    ```
-3. Con la clave activa, el buscador de artistas usa el catálogo real y los conciertos se piden a la Discovery API (Madrid, ES), incluidas las fechas de preventa y venta general.
+3. Con la clave activa, los conciertos se piden a la Discovery API filtrando por tus ciudades, incluidas las fechas de preventa y venta general.
 
 ## Publicar
 

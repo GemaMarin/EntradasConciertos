@@ -10,6 +10,7 @@ import { artistGradient } from "@/lib/colors";
 export function EventRow({ event, now, subtitle }: { event: ConcertEvent; now: Date; subtitle?: React.ReactNode }) {
   const open = useSheet((s) => s.open);
   const status = useApp((s) => s.status[event.id]);
+  const multiCity = useApp((s) => s.cities.length > 1);
   const nextSale = event.sales.find((s) => saleState(s, now) === "upcoming");
   const openSale = event.sales.find((s) => saleState(s, now) === "open");
 
@@ -32,7 +33,7 @@ export function EventRow({ event, now, subtitle }: { event: ConcertEvent; now: D
       <div className="min-w-0 flex-1">
         <p className="truncate text-[16px] font-semibold tracking-tight">{event.artistName}</p>
         <p className="truncate text-[13px] text-muted">
-          {formatWeekdayShort(event.date)} {formatTime(event.date)} · {event.venue}
+          {formatWeekdayShort(event.date)} {formatTime(event.date)} · {multiCity ? event.city : event.venue}
         </p>
         <div className="mt-1.5 flex items-center gap-1.5">
           {subtitle ??

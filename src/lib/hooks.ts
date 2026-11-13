@@ -52,11 +52,12 @@ const useEventsStore = create<EventsState>((set, get) => ({
 /** Conciertos en Madrid de los artistas que sigues */
 export function useEvents() {
   const artists = useApp((s) => s.artists);
+  const cities = useApp((s) => s.cities);
   const { events, loading, load, updatedAt } = useEventsStore();
-  const key = artists.map((a) => a.id).sort().join(",");
+  const key = artists.map((a) => a.id).sort().join(",") + "|" + [...cities].sort().join(",");
   useEffect(() => {
-    load(key, JSON.stringify({ artists }));
-  }, [key, artists, load]);
+    load(key, JSON.stringify({ artists, cities }));
+  }, [key, artists, cities, load]);
   return { events, loading, updatedAt };
 }
 

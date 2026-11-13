@@ -4,18 +4,11 @@ import { demoEventsFor } from "@/lib/demo-events";
 import { ticketmasterEnabled, tmEventsFor } from "@/lib/ticketmaster";
 
 export async function POST(req: NextRequest) {
-  const { artists = [] } = (await req.json()) as { artists?: Artist[] };
-  const demo = artists.filter((a) => a.source === "demo");
-  const live = artists.filter((a) => a.source === "ticketmaster");
-
-  let events: ConcertEvent[] = demoEventsFor(demo);
-  if (ticketmasterEnabled() && live.length) {
-    try {
-      events = events.concat(await tmEventsFor(live));
-    } catch (e) {
-      console.error(e);
-    }
-  }
+  const { artists = [], cities = ["madrid"] } = (await req.json()) as { artists?: Artist[]; cities?: string[] };
+  const live = ticketmasterEnabled();
+  let events: ConcertEvent[] = live ? await tmEventsFor(artists, cities) : demoEventsFor(artists, cities);
+  // Quitamos duplicados (un mismo concierto con dos artistas seguidos)
+  events = [...new Map(events.map((e) => [e.id, e])).values()];
   events.sort((a, b) => a.date.localeCompare(b.date));
-  return NextResponse.json({ events, updatedAt: new Date().toISOString() });
+  return NextResponse.json({ events, mode: live ? "live" : "demo", updatedAt: new Date().toISOString() });
 }

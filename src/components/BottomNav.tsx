@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
-import { CalendarDays, Home, Mic2 } from "lucide-react";
+import { CalendarDays, Home, Mic2, Users } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/calendario", label: "Calendario", icon: CalendarDays },
+  { href: "/amigos", label: "Amigos", icon: Users },
   { href: "/artistas", label: "Artistas", icon: Mic2 },
 ];
 
@@ -22,7 +23,10 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-full py-3 text-[13px] font-semibold transition-colors ${
+              aria-label={label}
+              className={`relative flex items-center justify-center gap-1.5 rounded-full py-3 text-[13px] font-semibold transition-colors ${
+                active ? "flex-[1.6]" : "flex-1"
+              } ${
                 active ? "text-black" : "text-muted"
               }`}
             >
@@ -34,7 +38,11 @@ export function BottomNav() {
                 />
               )}
               <Icon size={18} className="relative" strokeWidth={2.2} />
-              <span className="relative">{label}</span>
+              {active && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative">
+                  {label}
+                </motion.span>
+              )}
             </Link>
           );
         })}

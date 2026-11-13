@@ -53,11 +53,18 @@ const useEventsStore = create<EventsState>((set, get) => ({
 export function useEvents() {
   const artists = useApp((s) => s.artists);
   const cities = useApp((s) => s.cities);
-  const { events, loading, load, updatedAt } = useEventsStore();
+  const saved = useApp((s) => s.saved);
+  const { events: fetched, loading, load, updatedAt } = useEventsStore();
   const key = artists.map((a) => a.id).sort().join(",") + "|" + [...cities].sort().join(",");
   useEffect(() => {
     load(key, JSON.stringify({ artists, cities }));
   }, [key, artists, cities, load]);
+  // Añadimos los conciertos que marcaste aunque no vengan de tus artistas/ciudades
+  const events = useMemo(() => {
+    const ids = new Set(fetched.map((e) => e.id));
+    const extra = Object.values(saved).filter((e) => !ids.has(e.id));
+    return extra.length ? [...fetched, ...extra].sort((a, b) => a.date.localeCompare(b.date)) : fetched;
+  }, [fetched, saved]);
   return { events, loading, updatedAt };
 }
 

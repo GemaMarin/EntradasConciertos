@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { CalendarPlus, Flame, Mic2, Plus, Ticket } from "lucide-react";
+import { CalendarPlus, Flame, Mic2, Plus, Ticket, UserRound } from "lucide-react";
 import { useApp, useSheet } from "@/lib/store";
 import { useEvents, useNow, useSales } from "@/lib/hooks";
 import { dayKey, formatLong, formatTime } from "@/lib/dates";
@@ -13,6 +13,8 @@ import { EventRow } from "@/components/EventRow";
 import { DemoBadge } from "@/components/DemoBadge";
 import { citiesLabel } from "@/components/CityPicker";
 import { MapPin } from "lucide-react";
+import { useSession } from "@/lib/session";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export default function Home() {
   const now = useNow(1000);
@@ -32,7 +34,7 @@ export default function Home() {
 
   return (
     <main>
-      <PageTitle eyebrow={formatLong(now).split(" de 20")[0]} title={name ? `Hola, ${name}` : "Primera Fila"} right={<DemoBadge />} />
+      <PageTitle eyebrow={formatLong(now).split(" de 20")[0]} title={name ? `Hola, ${name}` : "Primera Fila"} right={<HeaderRight />} />
       <Link
         href="/artistas#ciudades"
         className="mx-5 mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[13px] font-semibold text-muted ring-1 ring-line"
@@ -156,6 +158,24 @@ export default function Home() {
         </>
       )}
     </main>
+  );
+}
+
+function HeaderRight() {
+  const profile = useSession((s) => s.profile);
+  return (
+    <div className="flex items-center gap-2">
+      <DemoBadge />
+      <Link href="/perfil" aria-label="Tu perfil" className="rounded-full ring-1 ring-line">
+        {profile ? (
+          <UserAvatar user={profile} size={40} />
+        ) : (
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-muted">
+            <UserRound size={19} />
+          </span>
+        )}
+      </Link>
+    </div>
   );
 }
 

@@ -13,6 +13,18 @@ App (web instalable / PWA) para seguir a tus grupos favoritos y **no perderte nu
 
 > ⚠️ Mientras no haya clave de Ticketmaster, los conciertos son **datos de ejemplo** (marcados como *Demo*).
 
+## Parte social (cuentas, amigos)
+
+- Registro con Google, perfil con @usuario (público o privado), seguir a gente tipo Instagram.
+- «Me interesa» / «Tengo entrada» se guardan en tu cuenta; en **Amigos** ves los planes de la gente que sigues y en cada concierto **quién va**.
+- Funciona con [Supabase](https://supabase.com) (gratis). Sin configurarlo, la app sigue funcionando en modo local.
+
+Configuración:
+1. Vercel → proyecto → **Storage** → *Create Database* → **Supabase** → conectar al proyecto (crea `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+2. Supabase → **SQL Editor** → pegar `supabase/schema.sql` → *Run*.
+3. Google Cloud Console → credencial OAuth (Web) con la URI de redirección `https://<proyecto>.supabase.co/auth/v1/callback`; Supabase → Authentication → Providers → **Google** → pegar Client ID y Secret.
+4. Supabase → Authentication → URL Configuration → *Site URL* = tu URL de Vercel y en *Redirect URLs* añadir `https://*.vercel.app/**`.
+
 ## Arrancar en local
 
 ```bash
@@ -36,16 +48,16 @@ La forma más sencilla es [Vercel](https://vercel.com): importar este repositori
 ## Estructura
 
 ```
-src/app/(main)/        Inicio, Calendario, Artistas (con barra inferior)
+src/app/(main)/        Inicio, Calendario, Amigos, Artistas, Perfil, /u/[usuario]
 src/app/bienvenida/    Onboarding
 src/app/api/           /api/artists (búsqueda) y /api/events (conciertos)
 src/components/        UI (tarjetas, hoja de detalle, navegación…)
-src/lib/               tipos, fechas (Europe/Madrid), datos demo, Ticketmaster, .ics, estado
+supabase/schema.sql    tablas y permisos (Row Level Security)
+src/lib/               tipos, Supabase (social.ts, sincronización), fechas (Europe/Madrid), datos demo, Ticketmaster, .ics, estado
 ```
 
 ## Próximas fases
 
 1. Datos reales + actualización diaria + notificaciones push.
-2. Cuentas, amigos y "a qué conciertos van tus amigos".
 3. Conciertos a los que has ido, con fotos.
 4. Descubrir artistas parecidos (Spotify / Last.fm).

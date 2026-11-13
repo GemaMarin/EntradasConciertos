@@ -7,6 +7,8 @@ import { ArrowRight, BellRing, CalendarDays, Music, Ticket } from "lucide-react"
 import { useApp } from "@/lib/store";
 import { ArtistPicker } from "@/components/ArtistPicker";
 import { CityPicker } from "@/components/CityPicker";
+import { GoogleButton } from "@/components/LoginCard";
+import { cloudEnabled } from "@/lib/supabase";
 import { artistGradient } from "@/lib/colors";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -53,6 +55,11 @@ export default function Welcome() {
             >
               Empezar <ArrowRight size={18} />
             </motion.button>
+            {cloudEnabled() && (
+              <div className="mt-3">
+                <GoogleButton next="/" label="Ya tengo cuenta · Entrar con Google" />
+              </div>
+            )}
           </motion.div>
         )}
 

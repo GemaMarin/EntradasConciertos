@@ -20,6 +20,7 @@ import { countdown, formatLong, formatShort, formatTime, saleState } from "@/lib
 import { downloadIcs } from "@/lib/ics";
 import type { ConcertEvent, EventStatus, Sale } from "@/lib/types";
 import { Poster } from "./Poster";
+import { FriendsGoing } from "./FriendsGoing";
 
 export function EventSheet() {
   const event = useSheet((s) => s.event);
@@ -74,7 +75,7 @@ function SheetBody({ event, close }: { event: ConcertEvent; close: () => void })
     }
   };
 
-  const toggle = (s: EventStatus) => setStatus(event.id, status === s ? null : s);
+  const toggle = (s: EventStatus) => setStatus(event, status === s ? null : s);
 
   return (
     <motion.div
@@ -141,6 +142,8 @@ function SheetBody({ event, close }: { event: ConcertEvent; close: () => void })
               Tengo entrada
             </StatusBtn>
           </div>
+
+          <FriendsGoing eventId={event.id} />
 
           {/* Línea temporal de ventas */}
           <div>

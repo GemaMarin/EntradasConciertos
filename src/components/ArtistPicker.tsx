@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Check, Search, X } from "lucide-react";
+import type { Artist } from "@/lib/types";
+import { useApp } from "@/lib/store";
+import { ArtistAvatar } from "./ArtistAvatar";
+
+export function ArtistPicker({ hideSelected = false }: { hideSelected?: boolean }) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Artist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const selected = useApp((s) => s.artists);
+  const toggle = useApp((s) => s.toggleArtist);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/artists?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        const data = await res.json();
+        setResults(data.artists);
+        setLoading(false);
+      } catch {}
+    }, 220);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [q]);
+
+  const ids = new Set(selected.map((a) => a.id));
+  const list = hideSelected ? results.filter((a) => !ids.has(a.id)) : results;
+
+  return (
+    <div>
+      <div className="relative mx-5">
+        <Search size={18} className="absolute top-1/2 left-4 -translate-y-1/2 text-faint" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Busca un grupo o un género"
+          className="w-full rounded-2xl bg-surface py-3.5 pr-11 pl-11 text-[16px] ring-1 ring-line outline-none placeholder:text-faint focus:ring-accent/60"
+        />
+        {q && (
+          <button aria-label="Borrar" onClick={() => setQ("")} className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-surface-3 p-1 text-muted">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-5 px-5 sm:grid-cols-4">
+        <AnimatePresence initial={false}>
+          {list.map((a) => {
+            const on = ids.has(a.id);
+            return (
+              <motion.button
+                key={a.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => toggle(a)}
+                className="flex flex-col items-center gap-2"
+              >
+                <div className="relative">
+                  <ArtistAvatar
+                    artist={a}
+                    size={84}
+                    className={`transition-all duration-300 ${on ? "ring-[3px] ring-accent ring-offset-[3px] ring-offset-bg" : "opacity-90"}`}
+                  />
+                  <AnimatePresence>
+                    {on && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute -right-0.5 -bottom-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white ring-[3px] ring-bg"
+                      >
+                        <Check size={15} strokeWidth={3} />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <span className={`line-clamp-2 text-center text-[13px] leading-tight font-semibold ${on ? "text-ink" : "text-muted"}`}>
+                  {a.name}
+                </span>
+              </motion.button>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+      {!loading && list.length === 0 && (
+        <p className="px-5 py-10 text-center text-sm text-muted">
+          No encontramos «{q}». En la versión con datos reales podrás buscar cualquier artista.
+        </p>
+      )}
+    </div>
+  );
+}
